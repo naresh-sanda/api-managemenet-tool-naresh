@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>REST API Data Pipeline Setup</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>REST API Data Pipeline Setup</h1>
+      <p>Configure authentication and data extraction settings for your webservice-based data pipelines.</p>
+    </header>
+
+    <!-- Parent Tabs -->
+    <nav class="parent-tabs">
+      <button class="parent-tab active" data-parent-target="auth-panel">Authentication API</button>
+      <button class="parent-tab" data-parent-target="data-panel">Data Extraction API</button>
+    </nav>
+
+    <!-- ================= AUTH PANEL ================= -->
+    <section id="auth-panel" class="parent-content active">
+      <div class="request-builder">
+        <div class="request-row">
+          <select id="auth-method" class="method-select">
+            <option>POST</option>
+            <option>GET</option>
+          </select>
+          <input id="auth-url" class="url-input"
+                 value="https://login.salesforce.com/services/oauth2/token"
+                 placeholder="Authentication endpoint URL" />
+          <button id="auth-send-btn" class="btn btn-primary">Send</button>
+        </div>
+
+        <div class="save-api-section">
+          <input id="auth-api-name" placeholder="Save as (e.g. Salesforce OAuth)" />
+          <button id="auth-save-btn" class="btn btn-secondary">💾 Save Auth Config</button>
+        </div>
+        <div id="auth-save-message" class="message"></div>
+
+        <div id="saved-apis-section" class="saved-apis-section" style="display:none;">
+          <h5>Saved Auth Configurations</h5>
+          <div id="saved-apis-container"></div>
+        </div>
+      </div>
+
+      <div class="tabs auth-tabs">
+        <button class="tab active" data-tab-target="auth-params">Query Params</button>
+        <button class="tab" data-tab-target="auth-headers">Headers</button>
+        <button class="tab" data-tab-target="auth-body">Body</button>
+        <button class="tab" data-tab-target="auth-type">Auth Type</button>
+        <button class="tab" data-tab-target="auth-settings">Settings</button>
+      </div>
+
+      <div id="auth-params" class="tab-content active">
+        <h4>Query Parameters</h4>
+        <table class="param-table">
+          <thead>
+          <tr>
+            <th>Key</th><th>Value</th><th>Description</th><th></th>
+          </tr>
+          </thead>
+          <tbody id="auth-params-body">
+          <tr>
+            <td><input value="grant_type" /></td>
+            <td><input value="password" /></td>
+            <td><input placeholder="OAuth grant type" /></td>
+            <td><button class="btn-delete-row">×</button></td>
+          </tr>
+          </tbody>
+        </table>
+        <button class="btn btn-outline btn-small" data-add-row="auth-params-body">+ Add Param</button>
+      </div>
+
+      <div id="auth-headers" class="tab-content">
+        <h4>Headers</h4>
+        <table class="param-table">
+          <thead>
+          <tr>
+            <th>Name</th><th>Value</th><th>Description</th><th></th>
+          </tr>
+          </thead>
+          <tbody id="auth-headers-body">
+          <tr>
+            <td><input value="Content-Type" /></td>
+            <td><input value="application/x-www-form-urlencoded" /></td>
+            <td><input placeholder="Body type" /></td>
+            <td><button class="btn-delete-row">×</button></td>
+          </tr>
+          </tbody>
+        </table>
+        <button class="btn btn-outline btn-small" data-add-row="auth-headers-body">+ Add Header</button>
+      </div>
+
+      <div id="auth-body" class="tab-content">
+        <h4>Body</h4>
+        <div class="form-group">
+          <label>Request Body</label>
+          <textarea id="auth-body-content"
+            placeholder='{"username":"user@example.com","password":"***","client_id":"***","client_secret":"***"}'></textarea>
+        </div>
+      </div>
+
+      <div id="auth-type" class="tab-content">
+        <h4>Auth Type</h4>
+        <div id="auth-type-grid" class="auth-type-grid">
+          <div class="auth-card selected" data-auth-type="oauth2">
+            <h5>OAuth 2.0</h5>
+            <p>Standard OAuth 2.0 token endpoint.</p>
+          </div>
+          <div class="auth-card" data-auth-type="apikey">
+            <h5>API Key</h5>
+            <p>Send API key in header or query.</p>
+          </div>
+          <div class="auth-card" data-auth-type="basic">
+            <h5>Basic Auth</h5>
+            <p>Base64 username:password.</p>
+          </div>
+          <div class="auth-card" data-auth-type="bearer">
+            <h5>Bearer Token</h5>
+            <p>Use an existing bearer token.</p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Token Path</label>
+          <input id="auth-token-path" value="access_token" />
+        </div>
+        <div class="form-group">
+          <label>Token Expiry Path (optional)</label>
+          <input id="auth-token-expiry-path" />
+        </div>
+
+        <div class="form-group">
+          <label>Credential Storage</label>
+          <div class="checkbox-group">
+            <input type="checkbox" id="auth-encrypt-creds" checked />
+            <span>Encrypt stored credentials</span>
+          </div>
+          <select id="auth-secret-store">
+            <option value="local-encrypted">Local encrypted</option>
+            <option value="vault">Vault</option>
+            <option value="aws-secrets">AWS Secrets Manager</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="auth-settings" class="tab-content">
+        <h4>Settings</h4>
+        <div class="form-group">
+          <label>Timeout (sec)</label>
+          <input id="auth-timeout" type="number" value="30" />
+        </div>
+        <div class="form-group">
+          <label>Retries</label>
+          <input id="auth-retries" type="number" value="3" />
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="auth-verify-ssl" checked />
+          <span>Verify SSL</span>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="auth-cache-token" checked />
+          <span>Cache token</span>
+        </div>
+      </div>
+
+      <div class="response-section">
+        <div class="response-header">
+          <h3>Auth Response</h3>
+          <span id="auth-response-meta" class="response-meta"></span>
+        </div>
+        <pre id="auth-response-box" class="response-box">Response will appear here…</pre>
+      </div>
+    </section>
+
+    <!-- ================= DATA PANEL ================= -->
+    <section id="data-panel" class="parent-content">
+      <div id="data-blocks-container"></div>
+
+      <div class="add-root-wrapper">
+        <button id="add-root-block" class="btn btn-outline">+ Add Root Data Block</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- Data Block Template -->
+  <template id="data-block-template">
+    <article class="data-block">
+      <header class="block-header">
+        <h3>Data Extraction Block</h3>
+        <button class="btn btn-small btn-outline btn-remove-block" style="display:none;">Remove</button>
+      </header>
+
+      <div class="block-condition-row">
+        <div class="form-group">
+          <label>Conditional Execution (optional)</label>
+          <input class="block-condition"
+                 placeholder="Expression / JSONPath to decide whether this block runs" />
+        </div>
+      </div>
+
+      <div class="request-builder">
+        <div class="form-group">
+          <label>Saved Auth Config</label>
+          <select class="saved-api-dropdown">
+            <option value="">-- Select saved Auth config --</option>
+          </select>
+        </div>
+
+        <div class="request-row">
+          <select class="method-select data-method">
+            <option>GET</option>
+            <option>POST</option>
+            <option>PUT</option>
+            <option>PATCH</option>
+          </select>
+          <input class="url-input data-url"
+                 placeholder="Data API endpoint URL" />
+          <button class="btn btn-primary btn-preview-config">Preview</button>
+        </div>
+      </div>
+
+      <div class="tabs data-tabs">
+        <button class="tab active" data-tab-target="data-params">Params</button>
+        <button class="tab" data-tab-target="data-headers">Headers</button>
+        <button class="tab" data-tab-target="data-body">Body</button>
+        <button class="tab" data-tab-target="data-auth">Auth</button>
+        <button class="tab" data-tab-target="data-pagination">Pagination</button>
+        <button class="tab" data-tab-target="data-object">Object</button>
+        <button class="tab" data-tab-target="data-columns">Columns</button>
+        <button class="tab" data-tab-target="data-mapping">Mapping</button>
+        <button class="tab" data-tab-target="data-scripts">Scripts</button>
+        <button class="tab" data-tab-target="data-settings">Settings</button>
+      </div>
+
+      <!-- Params -->
+      <div class="tab-content data-params active">
+        <h4>Query Params</h4>
+        <table class="param-table">
+          <thead>
+          <tr><th>Key</th><th>Value</th><th>Description</th><th></th></tr>
+          </thead>
+          <tbody class="data-params-body">
+          <tr>
+            <td><input /></td>
+            <td><input /></td>
+            <td><input /></td>
+            <td><button class="btn-delete-row">×</button></td>
+          </tr>
+          </tbody>
+        </table>
+        <button class="btn btn-outline btn-small add-row-btn" data-table="data-params-body">+ Add Param</button>
+      </div>
+
+      <!-- Headers -->
+      <div class="tab-content data-headers">
+        <h4>Headers</h4>
+        <table class="param-table">
+          <thead>
+          <tr><th>Name</th><th>Value</th><th>Description</th><th></th></tr>
+          </thead>
+          <tbody class="data-headers-body">
+          <tr>
+            <td><input value="Authorization" /></td>
+            <td><input value="Bearer {auth_token}" /></td>
+            <td><input placeholder="Auth header" /></td>
+            <td><button class="btn-delete-row">×</button></td>
+          </tr>
+          </tbody>
+        </table>
+        <button class="btn btn-outline btn-small add-row-btn" data-table="data-headers-body">+ Add Header</button>
+      </div>
+
+      <!-- Body -->
+      <div class="tab-content data-body">
+        <h4>Body</h4>
+        <div class="form-group">
+          <label>Body Content</label>
+          <textarea class="data-body-content"
+                    placeholder='{"query":"..."}'></textarea>
+        </div>
+      </div>
+
+      <!-- Auth -->
+      <div class="tab-content data-auth">
+        <h4>Auth Usage</h4>
+        <div class="form-group">
+          <label>Method</label>
+          <select class="data-auth-method">
+            <option>Use Token from Auth API</option>
+            <option>Static Bearer Token</option>
+            <option>API Key</option>
+            <option>No Authentication</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Token Placement</label>
+          <select class="data-token-placement">
+            <option>Authorization Header (Bearer)</option>
+            <option>Authorization Header (Custom)</option>
+            <option>Custom Header</option>
+            <option>Query Parameter</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Token Prefix</label>
+          <input class="data-token-prefix" value="Bearer" />
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="tab-content data-pagination">
+        <h4>Pagination</h4>
+        <div class="form-group">
+          <label>Pagination Type</label>
+          <select class="pagination-type">
+            <option value="none">None</option>
+            <option value="offset-limit" selected>Offset & Limit</option>
+            <option value="page-pagesize">Page & Page Size</option>
+            <option value="cursor">Cursor-based</option>
+            <option value="nextlink">Next Link</option>
+            <option value="token">Token-based</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Offset / Page Params</label>
+          <div class="grid-2">
+            <input class="offset-param" placeholder="offset / page" />
+            <input class="limit-param" placeholder="limit / pageSize" />
+            <input class="initial-offset" placeholder="start (0 or 1)" />
+            <input class="records-per-page" placeholder="records per page" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Cursor / Next Links</label>
+          <div class="grid-2">
+            <input class="cursor-path" placeholder="cursor path" />
+            <input class="has-next-path" placeholder="hasNext path" />
+            <input class="next-link-path" placeholder="next link path" />
+            <input class="next-token-path" placeholder="next token path" />
+          </div>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" class="auto-paginate" checked />
+          <span>Auto fetch all pages</span>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" class="stop-empty" />
+          <span>Stop when empty response</span>
+        </div>
+      </div>
+
+      <!-- Object -->
+      <div class="tab-content data-object">
+        <h4>Data Object</h4>
+        <div class="form-group">
+          <label>Root Path (optional)</label>
+          <input class="root-path" placeholder="data / response" />
+        </div>
+        <div class="form-group">
+          <label>Array Path</label>
+          <input class="data-object-path" value="records" placeholder="records / items / value" />
+        </div>
+        <div class="form-group">
+          <label>Record ID Field</label>
+          <input class="record-id-field" value="Id" />
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" class="flatten-nested" checked />
+          <span>Flatten nested objects</span>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" class="handle-arrays" />
+          <span>Convert arrays to JSON strings</span>
+        </div>
+        <div class="form-group">
+          <label>Sample Response (for validation & column detection)</label>
+          <textarea class="sample-response"
+                    placeholder="Paste sample API response here"></textarea>
+        </div>
+      </div>
+
+      <!-- Columns -->
+      <div class="tab-content data-columns">
+        <h4>Columns (Field Selector)</h4>
+        <div class="columns-controls">
+          <button class="btn btn-small btn-outline btn-detect-columns">Detect Fields</button>
+          <button class="btn btn-small btn-outline btn-columns-select-all">Select All</button>
+          <button class="btn btn-small btn-outline btn-columns-clear">Clear</button>
+        </div>
+        <p class="columns-hint">
+          Detection order: <strong>Sample Response</strong> → <strong>Last Preview Response</strong> → manual entry.
+        </p>
+        <div class="columns-list"></div>
+        <div class="form-group manual-column-group">
+          <label>Manually Add Column</label>
+          <div class="manual-column-row">
+            <input class="manual-column-input" placeholder="field.path" />
+            <button class="btn btn-small btn-outline btn-add-manual-column">Add</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mapping -->
+      <div class="tab-content data-mapping">
+        <h4>Field Mapping</h4>
+        <button class="btn btn-small btn-outline btn-generate-mapping">Generate from Selected Columns</button>
+        <table class="param-table mapping-table">
+          <thead>
+          <tr><th>Source Field</th><th>Target Column</th><th>Type</th><th>Transform</th><th></th></tr>
+          </thead>
+          <tbody class="mapping-body">
+          <tr>
+            <td><input /></td>
+            <td><input /></td>
+            <td><input placeholder="STRING / INT / DATE" /></td>
+            <td><input placeholder="UPPER(name) / parseDate(...)" /></td>
+            <td><button class="btn-delete-row">×</button></td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Scripts -->
+      <div class="tab-content data-scripts">
+        <h4>Scripts & Rules</h4>
+        <div class="form-group">
+          <label>Success Expression</label>
+          <input class="success-path" placeholder="status == 200 OR success == true" />
+        </div>
+        <div class="form-group">
+          <label>Error Message Path</label>
+          <input class="error-message-path" placeholder="error.message / errors[0].detail" />
+        </div>
+        <div class="form-group">
+          <label>Record Count Path</label>
+          <input class="record-count-path" placeholder="total / totalSize / meta.result_count" />
+        </div>
+        <div class="form-group">
+          <label>Validation Rules</label>
+          <div class="grid-2">
+            <input class="min-records" placeholder="Min records" />
+            <input class="max-records" placeholder="Max records" />
+            <input class="required-fields" placeholder="Required fields (comma separated)" />
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" class="validate-schema" />
+            <span>Validate JSON structure</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Pre-request Script</label>
+          <textarea class="pre-request-script"
+                    placeholder="// request.headers['X-Signature'] = sign(...);"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Post-response Script</label>
+          <textarea class="post-response-script"
+                    placeholder="// response.data = response.data.filter(r => r.active);"></textarea>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="tab-content data-settings">
+        <h4>Settings</h4>
+        <div class="form-group">
+          <label>API Type</label>
+          <select class="data-api-type">
+            <option value="rest">REST</option>
+            <option value="soap">SOAP</option>
+            <option value="graphql">GraphQL</option>
+          </select>
+        </div>
+
+        <div class="soap-section" style="display:none;">
+          <div class="form-group">
+            <label>WSDL / Service URL</label>
+            <input class="soap-wsdl" />
+          </div>
+          <div class="form-group">
+            <label>SOAP Action</label>
+            <input class="soap-action" />
+          </div>
+          <div class="form-group">
+            <label>SOAP Envelope Template</label>
+            <textarea class="soap-envelope"></textarea>
+          </div>
+        </div>
+
+        <div class="graphql-section" style="display:none;">
+          <div class="form-group">
+            <label>GraphQL Query</label>
+            <textarea class="graphql-query"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Root Node Path</label>
+            <input class="graphql-root-path" />
+          </div>
+          <div class="form-group">
+            <label>hasNextPage Path</label>
+            <input class="graphql-hasnext-path" />
+          </div>
+          <div class="form-group">
+            <label>endCursor Path</label>
+            <input class="graphql-cursor-path" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Date & Time</label>
+          <div class="grid-2">
+            <select class="data-date-format">
+              <option value="">Date Format</option>
+              <option value="yyyy-MM-dd">YYYY-MM-DD</option>
+              <option value="MM/dd/yyyy">MM/DD/YYYY</option>
+              <option value="dd/MM/yyyy">DD/MM/YYYY</option>
+              <option value="ISO8601">ISO 8601</option>
+              <option value="unix">Unix Timestamp</option>
+            </select>
+            <select class="data-timezone">
+              <option value="">Time Zone</option>
+              <option value="UTC">UTC</option>
+              <option value="Asia/Kolkata">Asia/Kolkata</option>
+              <option value="America/New_York">America/New_York</option>
+              <option value="Europe/London">Europe/London</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Retry & Rate Limit</label>
+          <div class="grid-2">
+            <input class="data-retry-limit" placeholder="Retry limit" />
+            <input class="data-sleep-time" placeholder="Sleep (ms) between retries" />
+            <input class="rate-req-per-sec" placeholder="Req/sec" />
+            <input class="rate-req-per-min" placeholder="Req/min" />
+            <input class="rate-cooloff" placeholder="Cool-off seconds" />
+            <input class="rate-status-codes" placeholder="Retry status codes (429,500...)" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Load Strategy</label>
+          <div class="grid-2">
+            <select class="load-type">
+              <option value="full">Full Load</option>
+              <option value="incremental">Incremental</option>
+              <option value="delta">Delta</option>
+            </select>
+            <input class="incremental-key" placeholder="Incremental key path" />
+            <select class="incremental-sort">
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Response Format</label>
+          <select class="data-response-format">
+            <option value="">Select</option>
+            <option value="json">JSON</option>
+            <option value="xml">XML</option>
+            <option value="csv">CSV</option>
+            <option value="text">Text</option>
+          </select>
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" class="data-ssl-disable" />
+          <span>Disable SSL validation (for dev only)</span>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" class="data-active" checked />
+          <span>Active</span>
+        </div>
+      </div>
+
+      <footer class="block-footer">
+        <button class="btn btn-primary btn-preview-config">👁 Preview Config JSON</button>
+        <button class="btn btn-outline btn-small btn-add-sub-block">+ Add Sub URL Block</button>
+      </footer>
+      <div class="nested-blocks"></div>
+    </article>
+  </template>
+
+  <!-- Preview Modal -->
+  <div id="preview-modal" class="modal-overlay">
+    <div class="modal">
+      <header class="modal-header">
+        <h3>Block Configuration Preview</h3>
+        <button id="modal-close" class="btn btn-small btn-outline">✕</button>
+      </header>
+      <div class="modal-body">
+        <pre id="modal-json"></pre>
+      </div>
+      <footer class="modal-footer">
+        <button id="modal-copy" class="btn btn-small btn-outline">Copy JSON</button>
+        <button id="modal-ok" class="btn btn-small btn-primary">OK</button>
+      </footer>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
